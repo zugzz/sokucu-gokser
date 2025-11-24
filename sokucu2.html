@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gökser'in Deliklerle İmtihanı</title>
+    <style>
+        /* General Body Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #38a169; /* Koyu yeşil saha */
+            color: #fff;
+        }
+
+        /* Game Container */
+        #game-container {
+            background-color: #2f855a; /* Saha koyuluğu */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            position: relative; /* Topu konumlandırmak için */
+        }
+
+        /* Goal Styling */
+        #goal {
+            background-color: #fff;
+            border: 5px solid #000;
+            height: 150px;
+            margin: 30px auto 10px auto; /* Top için yer açıldı */
+            transition: width 0.3s ease-out, background-color 0.1s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none; /* Kaleye tıklamayı engelle, sadece topa tıkla */
+        }
+
+        /* Goalie Placeholder */
+        #goal::before {
+            content: "🥅 KALECİ";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            color: #333;
+            user-select: none;
+        }
+
+        /* --- NEW: Ball Styling --- */
+        #ball {
+            width: 50px;
+            height: 50px;
+            background-color: #fff;
+            border-radius: 50%;
+            border: 3px solid #000;
+            margin: 10px auto 30px auto;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.1s;
+            touch-action: none; /* Mobile şarj için önemli */
+        }
+        
+        #ball:active {
+            transform: scale(0.9); /* Basılı tutma animasyonu */
+        }
+
+        /* Feedback Text */
+        #feedback {
+            font-size: 1.8em;
+            color: #ffeb3b;
+            margin-bottom: 20px;
+            min-height: 40px;
+            font-weight: 900;
+            text-shadow: 1px 1px 3px #000;
+        }
+        
+        /* --- POWER BAR STYLING --- */
+        #charge-area {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        #power-bar-container {
+            width: 90%;
+            max-width: 400px;
+            height: 30px;
+            background-color: #ddd;
+            border: 2px solid #000;
+            border-radius: 5px;
+            margin: 10px auto;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #power-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #f44336;
+            transition: background-color 0.1s;
+        }
+        
+        /* Reward Screen Styling */
+        #reward-screen {
+            background-color: #ffcc00;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 450px;
+            display: none;
+            color: #333;
+        }
+
+        #reward-screen h2 {
+            color: #d9006c;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        #reward-screen p {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        #reward-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 35px;
+            background-color: #e91e63;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1.5em;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #reward-link:hover {
+            background-color: #c2185b;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>⚽ GÖKSER'İN DELİKLERLE İMTİHANI ⚽</h1>
+        <p>Current Level: <span id="goal-count">0</span> / 5</p>
+        
+        <div id="feedback">Topa basılı tutarak şut gücünü ayarla!</div>
+
+        <div id="charge-area">
+            <p>Amacın **YEŞİL** bölgeye (30-70%) ulaşmak!</p>
+            <div id="power-bar-container">
+                <div id="power-bar"></div>
+            </div>
+        </div>
+        
+        <div id="goal"></div>
+        <div id="ball"></div> <p>🏆 Gol attıkça kale küçülerek işin zorlaşacak!</p>
+    </div>
+
+    <div id="reward-screen">
+        <h2>🥳 BAŞARILI SOKUCU! 🥳</h2>
+        <p>tebrikler, artık **sertifikalı bir sokucusunuz.**</p>
+        <p>Bize sokmayı öğrettiğiniz için **öğretmenler gününüz kutlu olsun.**</p>
+        <a id="reward-link" href="https://www.youtube.com/watch?v=i63cgUeSsY0" target="_blank">
+            ÖDÜLÜNÜ ALMAK İÇİN TIKLA!
+        </a>
+    </div>
+
+    <script>
+        // Game Variables
+        let goalCount = 0;
+        const maxGoals = 5;
+        let goalWidth = 400; 
+        const reductionPerGoal = 0.8; 
+
+        // Custom Messages
+        const goalMessages = [
+            "⚽ Gökser Soktu! 🥅",
+            "💥 Gökser Geçirdi! ✨",
+            "💖 Gökser Sokmaya Doyamıyor! 💋",
+            "🔥 Gökser Deldi Geçti! 🎯",
+            "👑 Şampiyon Gökser! 🥇"
+        ];
+
+        // --- SHOT MECHANIC VARIABLES ---
+        let isCharging = false;
+        let chargeLevel = 0;
+        let chargeTimer;
+        const maxCharge = 100;
+        const chargeDuration = 2000; // Full charge in 2 seconds
+
+        // Power thresholds (0-100)
+        const minGoalPower = 30; // Too weak if < 30 (Yuvarlama)
+        const maxGoalPower = 70; // Too strong if > 70 (Dışarı)
+        // --- END SHOT MECHANIC VARIABLES ---
+
+
+        // DOM Elements
+        const goalElement = document.getElementById('goal');
+        const ballElement = document.getElementById('ball'); // Yeni top elementi
+        const countElement = document.getElementById('goal-count');
+        const feedbackElement = document.getElementById('feedback');
+        const gameContainer = document.getElementById('game-container');
+        const rewardScreen = document.getElementById('reward-screen');
+        const powerBarElement = document.getElementById('power-bar');
+
+
+        // Initial setup
+        goalElement.style.width = goalWidth + 'px';
+
+        // --- SHOT FUNCTIONS ---
+
+        function startCharging() {
+            if (goalCount >= maxGoals || isCharging) return;
+
+            isCharging = true;
+            chargeLevel = 0;
+            feedbackElement.textContent = "GÜÇ DOLDURULUYOR... ⚡";
+            
+            const startTime = Date.now();
+            
+            function animateCharge() {
+                if (!isCharging) return;
+                
+                const elapsed = Date.now() - startTime;
+                chargeLevel = Math.min(maxCharge, (elapsed / chargeDuration) * 100); 
+
+                powerBarElement.style.width = chargeLevel + '%';
+                
+                // Change color based on charge zone
+                if (chargeLevel < minGoalPower) {
+                    powerBarElement.style.backgroundColor = '#4d90fe'; // Mavi: Zayıf
+                } else if (chargeLevel <= maxGoalPower) {
+                    powerBarElement.style.backgroundColor = '#4CAF50'; // Yeşil: İdeal
+                } else {
+                    powerBarElement.style.backgroundColor = '#f44336'; // Kırmızı: Fazla
+                }
+
+                if (chargeLevel < maxCharge) {
+                    chargeTimer = requestAnimationFrame(animateCharge);
+                } else if (chargeLevel >= maxCharge) {
+                    // Otomatik şut
+                    handleShot(); 
+                }
+            }
+            
+            chargeTimer = requestAnimationFrame(animateCharge);
+        }
+
+        function stopCharging() {
+            if (!isCharging) return;
+            
+            cancelAnimationFrame(chargeTimer);
+            isCharging = false;
+            handleShot();
+        }
+
+        function handleShot() {
+            // Reset bar
+            powerBarElement.style.width = '0%'; 
+            powerBarElement.style.backgroundColor = '#f44336'; 
+
+            if (chargeLevel >= minGoalPower && chargeLevel <= maxGoalPower) {
+                // GOAL! (The sweet spot)
+                handleGoalSuccess();
+            } else if (chargeLevel < minGoalPower) {
+                // Too weak (Yuvarlama)
+                feedbackElement.textContent = "ZAYIF! 😕 Top yuvarlandı, kaleye **girmedi**!";
+            } else {
+                // Too strong (Dışarı)
+                feedbackElement.textContent = "DIŞARI! 🥅 Şut çok sert, top dışarı **çıktı**!";
+            }
+            
+            chargeLevel = 0;
+        }
+
+
+        function handleGoalSuccess() {
+            if (goalCount >= maxGoals) return;
+
+            // 1. Update Score & Feedback with custom message
+            goalCount++;
+            countElement.textContent = goalCount;
+            feedbackElement.textContent = goalMessages[goalCount - 1];
+            
+            // Goal animation (Pink flash on goal)
+            goalElement.style.backgroundColor = '#ffc0cb';
+            setTimeout(() => {
+                goalElement.style.backgroundColor = '#fff';
+            }, 150);
+
+
+            if (goalCount < maxGoals) {
+                // 2. Shrink the Goal
+                goalWidth = goalWidth * reductionPerGoal;
+                goalElement.style.width = goalWidth + 'px';
+            } else {
+                // 3. Game Over (Victory)
+                // Hide game and show reward
+                gameContainer.style.display = 'none';
+                rewardScreen.style.display = 'block';
+            }
+        }
+
+        // Event Listeners for Desktop (Mouse) on the **BALL**
+        ballElement.addEventListener('mousedown', startCharging);
+        ballElement.addEventListener('mouseup', stopCharging);
+        // Handle mouseup/touchend globally for safety
+        document.addEventListener('mouseup', () => {
+             if (isCharging) stopCharging();
+        });
+
+
+        // Event Listeners for Mobile (Touch) on the **BALL**
+        ballElement.addEventListener('touchstart', (e) => {
+            e.preventDefault(); 
+            startCharging();
+        });
+        ballElement.addEventListener('touchend', stopCharging);
+        document.addEventListener('touchend', () => {
+             if (isCharging) stopCharging();
+        });
+
+    </script>
+
+</body>
+</html>
